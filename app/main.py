@@ -2,9 +2,10 @@ import streamlit as st
 import pandas as pd
 import sys
 import os
-import json
 import hashlib
 import pickle
+import sqlite3
+import subprocess
 
 # Add parent directory to path to allow absolute imports from root
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -17,9 +18,32 @@ from visuals.charts import plot_top_products, plot_sentiment_distribution, plot_
 # -- Configuration --
 st.set_page_config(page_title="AI Product Recommender", layout="wide", page_icon="🛍️")
 
-USERS_FILE = os.path.join(BASE_DIR, "users.json")
+def set_custom_style():
+    """Injects custom CSS to make the app look premium and professional."""
+    st.markdown("""
+    <style>
+    /* Hide default Streamlit elements for a clean UI */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    /* Custom Button Styling */
+    .stButton>button {
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: 1px solid #ff4b4b;
+    }
+    .stButton>button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0px 4px 12px rgba(255, 75, 75, 0.2);
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 MODELS_DIR = os.path.join(BASE_DIR, "models")
 DATA_FILE = os.path.join(BASE_DIR, "data", "Reviews.csv")
+DB_FILE = os.path.join(BASE_DIR, "data", "users.db")
 
 # ==========================================
 # 1. AUTHENTICATION LOGIC
@@ -27,26 +51,24 @@ DATA_FILE = os.path.join(BASE_DIR, "data", "Reviews.csv")
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-def load_users():
-    if not os.path.exists(USERS_FILE):
-        with open(USERS_FILE, "w") as f:
-            json.dump({}, f)
-    try:
-        with open(USERS_FILE, "r") as f:
-            return json.load(f)
-    except json.JSONDecodeError:
-        with open(USERS_FILE, "w") as f:
-            json.dump({}, f)
-        return {}
-
-def save_users(users):
-    with open(USERS_FILE, "w") as f:
-        json.dump(users, f, indent=4)
+def init_db():
+    """Initializes the SQLite Database for user management."""
+    os.makedirs(os.path.dirname(DB_FILE), exist_ok=True)
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS users 
+                 (username TEXT PRIMARY KEY, password TEXT)''')
+    conn.commit()
+    conn.close()
 
 def auth():
     st.title("🔐 Login / Signup to AI Recommender")
+    st.markdown("---")
+    
+    # Ensure DB exists
+    init_db()
+    
     choice = st.radio("Choose Option", ["Login", "Signup"])
-    users = load_users()
 
     col1, col2 = st.columns(2)
     with col1:
@@ -58,24 +80,35 @@ def auth():
         if st.button("Create Account"):
             if not username or not password:
                 st.error("Username and password cannot be empty")
-            elif username in users:
-                st.warning("User already exists ❗")
             else:
-                users[username] = hash_password(password)
-                save_users(users)
-                st.success("Account created ✅ Please switch to Login.")
+                try:
+                    conn = sqlite3.connect(DB_FILE)
+                    c = conn.cursor()
+                    c.execute("INSERT INTO users (username, password) VALUES (?, ?)", 
+                              (username, hash_password(password)))
+                    conn.commit()
+                    conn.close()
+                    st.success("Account created ✅ Please switch to Login.")
+                except sqlite3.IntegrityError:
+                    st.warning("User already exists ❗")
 
     if choice == "Login":
         if st.button("Login"):
             if not username or not password:
                 st.error("Username and password cannot be empty")
-            elif username in users and users[username] == hash_password(password):
-                st.session_state["logged_in"] = True
-                st.session_state["user"] = username
-                st.success("Login successful ✅")
-                st.rerun()
             else:
-                st.error("Invalid credentials ❌")
+                conn = sqlite3.connect(DB_FILE)
+                c = conn.cursor()
+                c.execute("SELECT password FROM users WHERE username = ?", (username,))
+                result = c.fetchone()
+                conn.close()
+                
+                if result and result[0] == hash_password(password):
+                    st.session_state["logged_in"] = True
+                    st.session_state["user"] = username
+                    st.rerun()
+                else:
+                    st.error("Invalid credentials ❌")
 
 # ==========================================
 # 2. DATA & MODEL LOADING LOGIC
@@ -112,16 +145,28 @@ def load_nlp_model(df):
 @st.cache_resource
 def load_svd_model():
     """Loads the pre-trained Collaborative Filtering SVD models."""
+    svd_model_path = os.path.join(MODELS_DIR, "svd_recommender_model.pkl")
+    user_map_path = os.path.join(MODELS_DIR, "user_rated_products_map.pkl")
+    all_prod_path = os.path.join(MODELS_DIR, "all_products.pkl")
+    
+    missing = []
+    if not os.path.exists(svd_model_path): missing.append("svd_recommender_model.pkl")
+    if not os.path.exists(user_map_path): missing.append("user_rated_products_map.pkl")
+    if not os.path.exists(all_prod_path): missing.append("all_products.pkl")
+    
+    if missing:
+        return None, None, None, f"Missing files: {', '.join(missing)}"
+        
     try:
-        with open(os.path.join(MODELS_DIR, "svd_recommender_model.pkl"), "rb") as f:
+        with open(svd_model_path, "rb") as f:
             svd_model = pickle.load(f)
-        with open(os.path.join(MODELS_DIR, "user_rated_products_map.pkl"), "rb") as f:
+        with open(user_map_path, "rb") as f:
             user_map = pickle.load(f)
-        with open(os.path.join(MODELS_DIR, "all_products.pkl"), "rb") as f:
+        with open(all_prod_path, "rb") as f:
             all_products = pickle.load(f)
-        return svd_model, user_map, all_products
+        return svd_model, user_map, all_products, "OK"
     except Exception as e:
-        return None, None, None
+        return None, None, None, f"Error loading models: {str(e)}"
 
 def get_svd_recommendations(user_id, model, user_map, all_products, n=5):
     if model is None:
@@ -139,6 +184,8 @@ def get_svd_recommendations(user_id, model, user_map, all_products, n=5):
 # 3. MAIN DASHBOARD UI
 # ==========================================
 def main():
+    set_custom_style()
+    
     # Setup session state for login
     if "logged_in" not in st.session_state:
         st.session_state["logged_in"] = False
@@ -160,7 +207,7 @@ def main():
     # Load all models and data
     df = load_and_prep_data()
     nlp_recommender = load_nlp_model(df)
-    svd_model, user_map, all_products = load_svd_model()
+    svd_model, user_map, all_products, svd_status = load_svd_model()
     
     tabs = st.tabs(["🤖 For You", "🔍 Search Similar Products", "📊 Analytics Dashboard", "📈 Top & Trending"])
     
@@ -179,7 +226,26 @@ def main():
                     else:
                         st.warning("Not enough user history to provide SVD recommendations.")
         else:
-            st.warning("Collaborative filtering model files are missing from the 'models/' folder.")
+            st.warning("Collaborative filtering model files are missing or failed to load.")
+            st.error(f"System Check Report: {svd_status}")
+            
+            st.write("### 🔍 Diagnostics & Auto-Fix")
+            if os.path.exists(MODELS_DIR):
+                files = os.listdir(MODELS_DIR)
+                st.code(f"Contents of models/ folder:\n{files if files else 'Folder is empty'}")
+            else:
+                st.code("models/ folder does not exist.")
+                
+            if st.button("🚀 Auto-Train Models Now"):
+                with st.spinner("Training models in background... This may take up to a minute."):
+                    script_path = os.path.join(BASE_DIR, "src", "train_svd.py")
+                    result = subprocess.run([sys.executable, script_path], capture_output=True, text=True)
+                    if result.returncode == 0:
+                        st.cache_resource.clear()
+                        st.success("✅ Models successfully generated! Reloading...")
+                        st.rerun()
+                    else:
+                        st.error(f"❌ Training Failed!\nError details:\n{result.stderr or result.stdout}")
 
     # Tab 2: NLP Similar Products
     with tabs[1]:
@@ -208,7 +274,17 @@ def main():
                 
     # Tab 3: Analytics
     with tabs[2]:
-        st.subheader("Sentiment Insights & Analytics")
+        st.subheader("📊 Business Intelligence & Analytics")
+        
+        # High-level KPI Metrics
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Total Reviews", f"{len(df):,}")
+        col2.metric("Unique Products", f"{df['ProductId'].nunique():,}")
+        col3.metric("Average Rating", f"{df['Score'].mean():.2f} ⭐")
+        positive_pct = (len(df[df['Sentiment'] > 0.1]) / len(df)) * 100
+        col4.metric("Positive Sentiment", f"{positive_pct:.1f}%")
+        
+        st.divider()
         st.plotly_chart(plot_sentiment_distribution(df), use_container_width=True)
         st.info("The **Sentiment Polarity** score ranges from **-1.0** (Negative) to **+1.0** (Positive). By analyzing the text of reviews, we can understand the overall customer satisfaction beyond just the star rating.")
             
@@ -223,4 +299,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

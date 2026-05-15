@@ -1,25 +1,27 @@
-# 🛍️ ReviewSense AI
+#  ReviewSense AI
 
-A professional, machine-learning-driven web application that provides personalized product suggestions using **Collaborative Filtering (SVD)** and **Content-Based Filtering (NLP)**. 
+Welcome to **ReviewSense AI**! This is a production-ready, machine-learning-driven web application that provides personalized product recommendations using a combination of **Collaborative Filtering (SVD)** and **Content-Based Filtering (NLP)**.
 
-This project features a secure authentication system, natural language review processing using **TF-IDF & Cosine Similarity**, and a rich interactive dashboard built with **Streamlit** and **Plotly** to provide insightful product analytics.
+Recently upgraded to a professional standard, this project now features a secure **SQLite-based authentication system**, natural language review processing using **TF-IDF & Cosine Similarity**, and a premium interactive dashboard with business KPIs, built using **Streamlit** and **Plotly**.
 
-## 🚀 Features
+## Features
 
-- **🔐 User Authentication**: Secure Login and Signup system with SHA-256 password hashing.
-- **🤖 Personalized Picks (SVD)**: Collaborative filtering engine that recommends products based on a user's past rating history.
-- **🔍 Content-Based NLP Recommendations**: Suggests similar products by analyzing the textual similarity of product summaries and reviews using TF-IDF Vectorization.
-- **🎭 Sentiment Analysis**: Evaluates customer reviews using `TextBlob` to assign polarity scores, helping differentiate genuinely positive feedback from sarcasm or mixed reviews.
-- **📊 Analytics Dashboard**: Interactive histograms and bar charts visualizing sentiment distribution, top-rated products, and trending products.
+- ** Premium UI & Business KPIs**: A custom-styled, clean interface that displays high-level metrics like Total Reviews, Average Ratings, and Positive Sentiment percentages.
+- **Secure User Authentication**: A robust Login and Signup system backed by a local **SQLite database** and SHA-256 password hashing.
+- **  Auto-Healing SVD Engine**: A collaborative filtering engine that recommends products based on user rating history, complete with an **Auto-Train** feature that automatically generates missing models in the background.
+- **  Content-Based NLP Recommendations**: Suggests similar products by analyzing the textual similarity of reviews and summaries using TF-IDF Vectorization.
+- **  Sentiment Analysis**: Evaluates customer reviews using `TextBlob` to assign polarity scores, easily differentiating genuinely positive feedback from negative ones.
+- **  Analytics Dashboard**: Interactive Plotly charts visualizing sentiment distributions, top-rated products, and trending items.
 
-## 📂 Project Structure
+##   Project Structure
 
 ```text
 ReviewSense-AI/
 ├── app/
 │   └── main.py                      # Main Streamlit dashboard and UI logic
 ├── data/
-│   └── Reviews.csv                  # Dataset containing product reviews
+│   ├── Reviews.csv                  # Dataset containing product reviews
+│   └── users.db                     # SQLite database for secure user credentials
 ├── models/                          
 │   ├── all_products.pkl             # Serialized list of all products
 │   ├── svd_recommender_model.pkl    # Trained SVD Collaborative Filtering model
@@ -27,24 +29,26 @@ ReviewSense-AI/
 ├── src/
 │   ├── __init__.py
 │   ├── recommender.py               # Core NLP TF-IDF Cosine Similarity logic
-│   └── sentiment.py                 # Sentiment analysis model using TextBlob
+│   ├── sentiment.py                 # Sentiment analysis model using TextBlob
+│   └── train_svd.py                 # Script to automatically train/generate SVD models
 ├── visuals/
 │   ├── __init__.py
 │   └── charts.py                    # Plotly interactive charting functions
-├── users.json                       # Local JSON database for user credentials
+├── .gitignore                       # Git ignore file for security and cache exclusion
 ├── requirements.txt                 # Project dependencies
 └── README.md                        # Project documentation
 ```
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 - **Language:** Python 3.x
-- **Frontend/UI:** Streamlit
-- **Machine Learning / NLP:** Scikit-Learn (TF-IDF, Cosine Similarity), TextBlob
+- **Frontend/UI:** Streamlit (with Custom CSS)
+- **Machine Learning / NLP:** Scikit-Learn, scikit-surprise (SVD), TextBlob
 - **Data Manipulation:** Pandas, NumPy
+- **Database:** SQLite
 - **Visualizations:** Plotly Express
 
-## ⚙️ Installation & Setup
+##  Installation & Setup
 
 Follow these steps to run the application on your local machine.
 
@@ -56,11 +60,11 @@ Follow these steps to run the application on your local machine.
 
 2. **Create a Virtual Environment (Recommended)**
    ```bash
-   python -m venv venv
+   python -m venv .venv
    # On Windows
-   venv\Scripts\activate
+   .venv\Scripts\activate
    # On macOS/Linux
-   source venv/bin/activate
+   source .venv/bin/activate
    ```
 
 3. **Install Dependencies**
@@ -73,11 +77,11 @@ Follow these steps to run the application on your local machine.
    streamlit run app/main.py
    ```
 
-## 🔮 Future Enhancements
+##  Future Enhancements
 
-- Integrate Collaborative Filtering (using `scikit-surprise`) for a Hybrid Recommendation System.
-- Save and load the pre-trained TF-IDF vectorizer matrix to reduce startup overhead.
-- Connect to an external SQL/NoSQL database for real-time review additions.
+- Build a **Weighted Hybrid Recommendation Engine** combining both NLP similarity and SVD estimations into a single score.
+- Implement caching for the pre-trained TF-IDF vectorizer matrix to further reduce app startup overhead.
+- Deploy the application seamlessly to **Streamlit Community Cloud** or AWS/GCP.
 
 ---
 *Developed by Aditi Tiwari*
