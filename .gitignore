@@ -1,5 +1,23 @@
+# Virtual Environments
 .venv/
+env/
+
+# Python Cache
 __pycache__/
-data/Reviews.csv
+*.py[cod]
+*$py.class
+
+# Local database / User credentials
+users.json
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+
+# IDEs and Editors
 .vscode/
-.env
+.idea/
+*.swp
+*.swo
+
