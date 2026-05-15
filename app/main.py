@@ -76,7 +76,7 @@ def auth():
                 st.rerun()
             else:
                 st.error("Invalid credentials ❌")
-                
+
 # ==========================================
 # 2. DATA & MODEL LOADING LOGIC
 # ==========================================
@@ -134,3 +134,93 @@ def get_svd_recommendations(user_id, model, user_map, all_products, n=5):
             preds.append((product, pred.est))
     preds.sort(key=lambda x: x[1], reverse=True)
     return [p[0] for p in preds[:n]]
+
+# ==========================================
+# 3. MAIN DASHBOARD UI
+# ==========================================
+def main():
+    # Setup session state for login
+    if "logged_in" not in st.session_state:
+        st.session_state["logged_in"] = False
+
+    if not st.session_state["logged_in"]:
+        auth()
+        st.stop()
+
+    # Sidebar Profile
+    st.sidebar.title("Profile")
+    st.sidebar.write(f"Welcome, **{st.session_state['user']}** 👋")
+    if st.sidebar.button("🚪 Logout", use_container_width=True):
+        st.session_state["logged_in"] = False
+        st.rerun()
+
+    st.title("🛍️ NLP-Powered Product Recommendation Platform")
+    st.markdown("Discover the best products driven by **TF-IDF Cosine Similarity** and **Sentiment Analysis**.")
+    
+    # Load all models and data
+    df = load_and_prep_data()
+    nlp_recommender = load_nlp_model(df)
+    svd_model, user_map, all_products = load_svd_model()
+    
+    tabs = st.tabs(["🤖 For You", "🔍 Search Similar Products", "📊 Analytics Dashboard", "📈 Top & Trending"])
+    
+    # Tab 1: Personalized SVD Recommendations
+    with tabs[0]:
+        st.subheader("Personalized Picks for You")
+        if svd_model:
+            num_recs = st.slider("Number of recommendations", 1, 10, 5, key='svd_slider')
+            if st.button("🎯 Get Recommendations", use_container_width=True):
+                with st.spinner("Analyzing your profile..."):
+                    recs = get_svd_recommendations(st.session_state['user'], svd_model, user_map, all_products, num_recs)
+                    if recs:
+                        st.success("✅ Top Personalized Recommendations based on Collaborative Filtering:")
+                        for i, product_id in enumerate(recs, 1):
+                            st.info(f"{i}. **{product_id}**")
+                    else:
+                        st.warning("Not enough user history to provide SVD recommendations.")
+        else:
+            st.warning("Collaborative filtering model files are missing from the 'models/' folder.")
+
+    # Tab 2: NLP Similar Products
+    with tabs[1]:
+        st.subheader("Search Content-Based Recommendations")
+        product_list = df['ProductId'].unique()
+        selected_product = st.selectbox("Select a Product ID to get recommendations:", product_list)
+        
+        if selected_product:
+            st.write(f"### Similar to {selected_product}")
+            recs = nlp_recommender.recommend(selected_product, top_n=3)
+            
+            if not recs.empty:
+                for idx, row in recs.iterrows():
+                    with st.expander(f"Product: {row['ProductId']} | Match: {row['SimilarityScore']:.2%} | ⭐ {row['Score']}/5"):
+                        st.markdown(f"**Summary:** {row['Summary']}")
+                        st.markdown(f"**Review Preview:** {row['Text']}")
+                        st.markdown(f"**Helpfulness:** {row['HelpfulnessNumerator']} / {row['HelpfulnessDenominator']}")
+                        
+                        sentiment_color = "green" if row['Sentiment'] > 0 else "red" if row['Sentiment'] < 0 else "gray"
+                        st.markdown(f"**Sentiment Score:** :{sentiment_color}[{row['Sentiment']:.2f}]")
+                        st.progress(float(row['SimilarityScore']))
+                        
+                        st.info(f"**Why recommended?** This product shares similar textual review content based on NLP TF-IDF features with a {row['SimilarityScore']:.2%} similarity match.")
+            else:
+                st.warning("Not enough data to recommend similar products.")
+                
+    # Tab 3: Analytics
+    with tabs[2]:
+        st.subheader("Sentiment Insights & Analytics")
+        st.plotly_chart(plot_sentiment_distribution(df), use_container_width=True)
+        st.info("The **Sentiment Polarity** score ranges from **-1.0** (Negative) to **+1.0** (Positive). By analyzing the text of reviews, we can understand the overall customer satisfaction beyond just the star rating.")
+            
+    # Tab 4: Trending
+    with tabs[3]:
+        st.subheader("Product Performance Dashboard")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.plotly_chart(plot_top_products(df), use_container_width=True)
+        with col2:
+            st.plotly_chart(plot_trending_products(df), use_container_width=True)
+
+if __name__ == "__main__":
+    main()
+
