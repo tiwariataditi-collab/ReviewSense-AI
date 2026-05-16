@@ -62,7 +62,7 @@ def init_db():
     conn.close()
 
 def auth():
-    st.title("🔐 Login / Signup to AI Recommender")
+    st.title(" Login / Signup to AI Recommender")
     st.markdown("---")
     
     # Ensure DB exists
@@ -72,9 +72,9 @@ def auth():
 
     col1, col2 = st.columns(2)
     with col1:
-        username = st.text_input("👤 Username", key="username")
+        username = st.text_input(" Username", key="username")
     with col2:
-        password = st.text_input("🔑 Password", type="password", key="password")
+        password = st.text_input(" Password", type="password", key="password")
 
     if choice == "Signup":
         if st.button("Create Account"):
@@ -88,9 +88,9 @@ def auth():
                               (username, hash_password(password)))
                     conn.commit()
                     conn.close()
-                    st.success("Account created ✅ Please switch to Login.")
+                    st.success("Account created. Please switch to Login.")
                 except sqlite3.IntegrityError:
-                    st.warning("User already exists ❗")
+                    st.warning("User already exists !")
 
     if choice == "Login":
         if st.button("Login"):
@@ -108,7 +108,7 @@ def auth():
                     st.session_state["user"] = username
                     st.rerun()
                 else:
-                    st.error("Invalid credentials ❌")
+                    st.error("Invalid credentials !")
 
 # ==========================================
 # 2. DATA & MODEL LOADING LOGIC
@@ -196,12 +196,12 @@ def main():
 
     # Sidebar Profile
     st.sidebar.title("Profile")
-    st.sidebar.write(f"Welcome, **{st.session_state['user']}** 👋")
+    st.sidebar.write(f"Welcome, **{st.session_state['user']}** ")
     if st.sidebar.button("🚪 Logout", use_container_width=True):
         st.session_state["logged_in"] = False
         st.rerun()
 
-    st.title("🛍️ NLP-Powered Product Recommendation Platform")
+    st.title(" Product Recommendation Platform")
     st.markdown("Discover the best products driven by **TF-IDF Cosine Similarity** and **Sentiment Analysis**.")
     
     # Load all models and data
@@ -216,11 +216,11 @@ def main():
         st.subheader("Personalized Picks for You")
         if svd_model:
             num_recs = st.slider("Number of recommendations", 1, 10, 5, key='svd_slider')
-            if st.button("🎯 Get Recommendations", use_container_width=True):
+            if st.button(" Get Recommendations", use_container_width=True):
                 with st.spinner("Analyzing your profile..."):
                     recs = get_svd_recommendations(st.session_state['user'], svd_model, user_map, all_products, num_recs)
                     if recs:
-                        st.success("✅ Top Personalized Recommendations based on Collaborative Filtering:")
+                        st.success(" Top Personalized Recommendations based on Collaborative Filtering:")
                         for i, product_id in enumerate(recs, 1):
                             st.info(f"{i}. **{product_id}**")
                     else:
@@ -229,23 +229,23 @@ def main():
             st.warning("Collaborative filtering model files are missing or failed to load.")
             st.error(f"System Check Report: {svd_status}")
             
-            st.write("### 🔍 Diagnostics & Auto-Fix")
+            st.write("###  Diagnostics & Auto-Fix")
             if os.path.exists(MODELS_DIR):
                 files = os.listdir(MODELS_DIR)
                 st.code(f"Contents of models/ folder:\n{files if files else 'Folder is empty'}")
             else:
                 st.code("models/ folder does not exist.")
                 
-            if st.button("🚀 Auto-Train Models Now"):
+            if st.button(" Auto-Train Models Now"):
                 with st.spinner("Training models in background... This may take up to a minute."):
                     script_path = os.path.join(BASE_DIR, "src", "train_svd.py")
                     result = subprocess.run([sys.executable, script_path], capture_output=True, text=True)
                     if result.returncode == 0:
                         st.cache_resource.clear()
-                        st.success("✅ Models successfully generated! Reloading...")
+                        st.success("  Models successfully generated! Reloading...")
                         st.rerun()
                     else:
-                        st.error(f"❌ Training Failed!\nError details:\n{result.stderr or result.stdout}")
+                        st.error(f" Training Failed!\nError details:\n{result.stderr or result.stdout}")
 
     # Tab 2: NLP Similar Products
     with tabs[1]:
@@ -274,13 +274,13 @@ def main():
                 
     # Tab 3: Analytics
     with tabs[2]:
-        st.subheader("📊 Business Intelligence & Analytics")
+        st.subheader("  Business Intelligence & Analytics")
         
         # High-level KPI Metrics
         col1, col2, col3, col4 = st.columns(4)
         col1.metric("Total Reviews", f"{len(df):,}")
         col2.metric("Unique Products", f"{df['ProductId'].nunique():,}")
-        col3.metric("Average Rating", f"{df['Score'].mean():.2f} ⭐")
+        col3.metric("Average Rating", f"{df['Score'].mean():.2f} ")
         positive_pct = (len(df[df['Sentiment'] > 0.1]) / len(df)) * 100
         col4.metric("Positive Sentiment", f"{positive_pct:.1f}%")
         
@@ -290,7 +290,7 @@ def main():
             
     # Tab 4: Trending
     with tabs[3]:
-        st.subheader("Product Performance Dashboard")
+        st.subheader(" Product Performance Dashboard")
         col1, col2 = st.columns(2)
         with col1:
             st.plotly_chart(plot_top_products(df), use_container_width=True)
