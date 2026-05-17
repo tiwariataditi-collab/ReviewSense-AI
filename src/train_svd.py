@@ -27,9 +27,17 @@ def train_and_save_svd():
     # Drop missing rows
     df = df.dropna(subset=['UserId', 'ProductId', 'Score'])
     
-    # Taking a sample of 10,000 rows for fast training (you can increase this later)
-    if len(df) > 10000:
-        df_sample = df.sample(n=10000, random_state=42)
+    # Filter for density: SVD needs users and products with multiple ratings to find patterns
+    print("Filtering out sparse data to improve accuracy...")
+    min_user_ratings = 3
+    min_product_ratings = 3
+    
+    df = df[df.groupby('UserId')['UserId'].transform('size') >= min_user_ratings]
+    df = df[df.groupby('ProductId')['ProductId'].transform('size') >= min_product_ratings]
+
+    # Taking a larger sample of 50,000 rows for better accuracy
+    if len(df) > 50000:
+        df_sample = df.sample(n=50000, random_state=42)
     else:
         df_sample = df
 
@@ -39,7 +47,7 @@ def train_and_save_svd():
     
     print("Evaluating Model Accuracy (Train/Test Split)...")
     trainset_eval, testset_eval = train_test_split(data, test_size=0.2, random_state=42)
-    eval_model = SVD()
+    eval_model = SVD(n_factors=50, reg_all=0.05)  # Tuned hyperparameters
     eval_model.fit(trainset_eval)
     predictions = eval_model.test(testset_eval)
     print("Model Evaluation Metrics:")
@@ -49,7 +57,7 @@ def train_and_save_svd():
     print("Training Final SVD Model on full dataset...")
     trainset = data.build_full_trainset()
     
-    svd_model = SVD()
+    svd_model = SVD(n_factors=50, reg_all=0.05)
     svd_model.fit(trainset)
 
     print("Generating user maps and product lists...")
