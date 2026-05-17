@@ -119,17 +119,18 @@ def load_and_prep_data():
     Loads dataset from a CSV file and computes sentiments.
     """
     try:
-        df = pd.read_csv(DATA_FILE)
-    except FileNotFoundError:
-        st.error(f"Dataset not found at: {DATA_FILE}. Please check your 'data/' folder.")
+        # Use nrows to prevent Out-Of-Memory crashes on the 1GB Cloud Server
+        df = pd.read_csv(DATA_FILE, nrows=20000)
+    except Exception as e:
+        st.error(f"Failed to load dataset at: {DATA_FILE}. Error details: {str(e)}")
         st.stop()
         
     # IMPORTANT: Drop rows with missing text first
     df = df.dropna(subset=['Text', 'Summary'])
     
-    # Sample data to make it load instantly (fixes the black screen issue)
-    # Adjust 'n' if you want more or fewer rows to process
-    df = df.sample(n=1000, random_state=42)
+    # Sample data to ensure lightning-fast UI performance
+    if len(df) > 5000:
+        df = df.sample(n=5000, random_state=42)
     
     # Calculate Sentiment mapping applying our sentiment model
     df['Sentiment'] = df['Text'].apply(analyze_sentiment)
