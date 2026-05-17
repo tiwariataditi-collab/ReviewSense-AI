@@ -4,7 +4,8 @@ import os
 import sys
 
 try:
-    from surprise import Reader, Dataset, SVD
+    from surprise import Reader, Dataset, SVD, accuracy
+    from surprise.model_selection import train_test_split
 except ImportError:
     print("Error: 'scikit-surprise' is not installed. Please run: pip install scikit-surprise")
     sys.exit(1)
@@ -35,6 +36,17 @@ def train_and_save_svd():
     print("Training SVD Model (this might take a few seconds)...")
     reader = Reader(rating_scale=(1, 5))
     data = Dataset.load_from_df(df_sample[['UserId', 'ProductId', 'Score']], reader)
+    
+    print("Evaluating Model Accuracy (Train/Test Split)...")
+    trainset_eval, testset_eval = train_test_split(data, test_size=0.2, random_state=42)
+    eval_model = SVD()
+    eval_model.fit(trainset_eval)
+    predictions = eval_model.test(testset_eval)
+    print("Model Evaluation Metrics:")
+    accuracy.rmse(predictions)
+    accuracy.mae(predictions)
+
+    print("Training Final SVD Model on full dataset...")
     trainset = data.build_full_trainset()
     
     svd_model = SVD()
