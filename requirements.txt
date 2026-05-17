@@ -1,11 +1,10 @@
+Cython
+numpy==1.26.4
 pandas
-numpy
 matplotlib
 seaborn
 scipy
 scikit-learn
-ipykernel
-numpy==1.26.4
 streamlit
 plotly
 textblob
