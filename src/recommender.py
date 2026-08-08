@@ -32,21 +32,28 @@ class NLPRecommender:
         if product_id not in self.df['ProductId'].values:
             return pd.DataFrame()
         
-        # Get index of the product
+        # Getting index of the product
         idx = self.df[self.df['ProductId'] == product_id].index[0]
         
         # Compute similarities
         sim_scores = list(enumerate(cosine_similarity(self.tfidf_matrix[idx], self.tfidf_matrix)[0]))
         
-        # Sort by highest similarity, ignoring the item itself
-        sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)[1:top_n+1]
+        # Exclude every review belonging to the queried product itself (not just one row),
+        # otherwise a product with multiple reviews can end up "recommended" to itself
+        same_product_indices = set(self.df[self.df['ProductId'] == product_id].index)
+        sim_scores = [s for s in sim_scores if s[0] not in same_product_indices]
+        sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
         
-        product_indices = [i[0] for i in sim_scores]
-        scores = [i[1] for i in sim_scores]
+        # Pull a larger candidate pool since several reviews can share the same ProductId,
+        # otherwise deduplicating afterward can leave us with fewer than top_n results
+        candidate_pool = sim_scores[: max(top_n * 5, 20)]
+        
+        product_indices = [i[0] for i in candidate_pool]
+        scores = [i[1] for i in candidate_pool]
         
         # Prepare recommendation dataframe
         rec_df = self.df.iloc[product_indices].copy()
         rec_df['SimilarityScore'] = scores
         
-        # Deduplicate recommendations by ProductId in case of multiple reviews for the same product
+        # Deduplicate by ProductId first, THEN take top_n, so we don't lose slots to duplicates
         return rec_df.drop_duplicates(subset=['ProductId']).head(top_n)
