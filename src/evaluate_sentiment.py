@@ -1,10 +1,13 @@
 import pandas as pd
 import os
 import sys
-from sentiment import analyze_sentiment
 
-# Path Setup
+# Add parent directory to path so this can be run directly, e.g. `python src/evaluate_sentiment.py`
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(BASE_DIR)
+
+from src.sentiment import analyze_sentiment
+
 DATA_FILE = os.path.join(BASE_DIR, "data", "Reviews.csv")
 
 def evaluate_sentiment_accuracy():
@@ -40,7 +43,7 @@ def evaluate_sentiment_accuracy():
     
     # Calculate Accuracy
     accuracy = (df_sample['True_Sentiment'] == df_sample['Pred_Sentiment']).mean()
-    print(f"\n📊 Sentiment Analysis (TextBlob) Accuracy: {accuracy * 100:.2f}%")
+    print(f"\n Sentiment Analysis (TextBlob) Accuracy: {accuracy * 100:.2f}%")
 
 if __name__ == "__main__":
     evaluate_sentiment_accuracy()
