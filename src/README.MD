@@ -1,6 +1,6 @@
-#  ReviewSense AI
+#  AI Food Recommendation System
 
-Welcome to **ReviewSense AI**! This is a production-ready, machine-learning-driven web application that provides personalized product recommendations using a combination of **Collaborative Filtering (SVD)** and **Content-Based Filtering (NLP)**.
+Welcome to **AI Food Recommendation System**! This is a production-ready, machine-learning-driven web application that provides personalized food product recommendations using a combination of **Collaborative Filtering (SVD)** and **Content-Based Filtering (NLP)**.
 
 Recently upgraded to a professional standard, this project now features a secure **SQLite-based authentication system**, natural language review processing using **TF-IDF & Cosine Similarity**, and a premium interactive dashboard with business KPIs, built using **Streamlit** and **Plotly**.
 
@@ -16,7 +16,7 @@ Recently upgraded to a professional standard, this project now features a secure
 ##   Project Structure
 
 ```text
-ReviewSense-AI/
+AI-Food-Recommendation-System/
 ├── app/
 │   └── main.py                      # Main Streamlit dashboard and UI logic
 ├── data/
@@ -38,6 +38,16 @@ ReviewSense-AI/
 ├── requirements.txt                 # Project dependencies
 └── README.md                        # Project documentation
 ```
+
+##  Dataset
+
+This project uses the **[Amazon Fine Food Reviews](https://www.kaggle.com/datasets/snap/amazon-fine-food-reviews)** dataset from Kaggle.
+
+- ~568,000 food reviews left by Amazon users, spanning Oct 1999 – Oct 2012
+- 256,059 unique users and 74,258 unique products
+- Each review includes `ProductId`, `UserId`, `Score` (1–5 rating), `Summary`, and full review `Text`
+
+Download `Reviews.csv` from the link above and place it in the `data/` folder before running the app (see Installation & Setup below).
 
 ##  Tech Stack
 
