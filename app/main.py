@@ -16,7 +16,7 @@ from src.sentiment import analyze_sentiment
 from visuals.charts import plot_top_products, plot_sentiment_distribution, plot_trending_products
 
 # -- Configuration --
-st.set_page_config(page_title="AI Food Recommendation System", layout="wide", page_icon="🍽️")
+st.set_page_config(page_title="ReviewSense AI", layout="wide", page_icon="🍽️")
 
 def set_custom_style():
     """Injects custom CSS to make the app look premium and professional."""
